@@ -10,7 +10,7 @@ How to compile
         
         (cd ogr/ogrsf_frmts/ &&
          mv vfk vfk.orig &&
-         ln -s ../../2016-a-gdal-vfk-pg/vfk .
+         ln -sf ../../../2016-a-gdal-vfk-pg/vfk .
         )
         
         ./configure --prefix=/usr/local --with-sqlite3
