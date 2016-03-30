@@ -7,7 +7,8 @@ How to compile
         svn co https://svn.osgeo.org/gdal/trunk/gdal
         cd gdal
         
-        (cd ogr/ogrsf_frmts/ &&
+        (
+	 cd ogr/ogrsf_frmts/ &&
          mv vfk vfk.orig &&
          git clone https://github.com/ctu-yfsg/2016-a-gdal-vfk-pg.git vfk
         )
