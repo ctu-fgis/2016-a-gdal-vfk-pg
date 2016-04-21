@@ -59,7 +59,8 @@ IVFKReader::~IVFKReader()
 */
 IVFKReader *CreateVFKReader(const char *pszFilename)
 {
-    return new VFKReaderSQLite(pszFilename);
+    // PB: rozdelit postup nacitani na SQLite a psql
+    return new VFKReaderDB(pszFilename);
 }
 
 /*!

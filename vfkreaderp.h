@@ -86,14 +86,14 @@ public:
 };
 
 /************************************************************************/
-/*                              VFKReaderSQLite                         */
+/*                              VFKReaderDB                             */
 /************************************************************************/
 
-class VFKReaderSQLite : public VFKReader
+class VFKReaderDB : public VFKReader
 {
 private:
     char          *m_pszDBname;
-    sqlite3       *m_poDB;
+    sqlite3       *m_poDB; // PB: datovy typ sqlite3?
     bool           m_bSpatial;
     bool           m_bNewDb;
 
@@ -105,19 +105,37 @@ private:
 
     void           CreateIndex(const char *, const char *, const char *, bool = TRUE);
 
-    friend class   VFKFeatureSQLite;
+    friend class   VFKFeatureDB;
 public:
-    VFKReaderSQLite(const char *);
-    virtual ~VFKReaderSQLite();
+    VFKReaderDB(const char *);
+    virtual ~VFKReaderDB();
 
     bool          IsSpatial() const { return m_bSpatial; }
     bool          IsPreProcessed() const { return !m_bNewDb; }
     int           ReadDataBlocks();
     int           ReadDataRecords(IVFKDataBlock * = NULL);
 
-    sqlite3_stmt *PrepareStatement(const char *);
+    sqlite3_stmt *PrepareStatement(const char *);   //PB: datovy typ sqlite3_stmt?
     OGRErr        ExecuteSQL(const char *, bool = FALSE);
     OGRErr        ExecuteSQL(sqlite3_stmt *);
+};
+
+/************************************************************************/
+/*                              VFKReaderSQLite                         */
+/************************************************************************/
+
+class VFKReaderSQLite : public VFKReaderDB
+{
+
+};
+
+/************************************************************************/
+/*                              VFKReaderPG                             */
+/************************************************************************/
+
+class VFKReaderPG : public VFKReaderDB
+{
+
 };
 
 #endif // GDAL_OGR_VFK_VFKREADERP_H_INCLUDED
