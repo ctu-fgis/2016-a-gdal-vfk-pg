@@ -29,3 +29,5 @@
 
 # Extra
 .idea
+*.autosave
+*~

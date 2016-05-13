@@ -1,7 +1,7 @@
-CORE_OBJ        = vfkreader.obj vfkreadersqlite.obj \
-	vfkdatablock.obj vfkdatablocksqlite.obj \
+CORE_OBJ        = vfkreader.obj vfkreaderdb.obj \
+        vfkdatablock.obj vfkdatablockdb.obj \
 	vfkpropertydefn.obj \
-	vfkfeature.obj vfkfeaturesqlite.obj \
+        vfkfeature.obj vfkfeaturedb.obj \
 	vfkproperty.obj
 
 OGR_OBJ = ogrvfkdriver.obj ogrvfkdatasource.obj ogrvfklayer.obj
