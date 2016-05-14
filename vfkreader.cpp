@@ -42,7 +42,7 @@
 #define SUPPORT_GEOMETRY
 
 #ifdef SUPPORT_GEOMETRY
-#  include "ogr_geometry.h"
+#include "ogr_geometry.h"
 #endif
 
 static char *GetDataBlockName(const char *);
@@ -61,8 +61,17 @@ IVFKReader::~IVFKReader()
 */
 IVFKReader *CreateVFKReader(const char *pszFilename)
 {
-    // PB: rozdelit postup nacitani na SQLite a psql
-    return new VFKReaderDB(pszFilename);
+    // PB: OGR_VFK_DB_NAME - zmenit na OGR_VFK_DB ???
+
+    const char *pszDbNameConf = CPLGetConfigOption("OGR_VFK_DB_NAME", NULL);
+    return new VFKReaderPG(pszFilename);
+    /*
+    if(pszDbNameConf && STARTS_WITH(pszDbNameConf, "PG:")){
+        return new VFKReaderPG(pszFilename);
+    }else{
+        return new VFKReaderSQLite(pszFilename);
+    }
+    */
 }
 
 /*!

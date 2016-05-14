@@ -95,11 +95,16 @@ public:
 class VFKReaderDB : public VFKReader
 {
 private:
+
+protected:
     char          *m_pszDBname;
-    sqlite3       *m_poDB; // PB: datovy typ sqlite3?
     bool           m_bSpatial;
     bool           m_bNewDb;
     bool           m_bDbSource;
+
+    CPLString      osCommand;
+    CPLString      osDbName;
+    const char    *pszDbNameConf;
 
     IVFKDataBlock *CreateDataBlock(const char *);
     void           AddDataBlock(IVFKDataBlock *, const char *);
@@ -116,7 +121,7 @@ public:
 
     bool          IsSpatial() const { return m_bSpatial; }
     bool          IsPreProcessed() const { return !m_bNewDb; }
-    bool          IsValid() const { return (bool)m_poDB; }
+    bool          IsValid() const { return TRUE; }
     int           ReadDataBlocks();
     int           ReadDataRecords(IVFKDataBlock * = NULL);
 
@@ -131,7 +136,12 @@ public:
 
 class VFKReaderSQLite : public VFKReaderDB
 {
+protected:
+    sqlite3 *m_poDB;
 
+public:
+    VFKReaderSQLite(const char *);
+    virtual ~VFKReaderSQLite();
 };
 
 /************************************************************************/
@@ -140,7 +150,14 @@ class VFKReaderSQLite : public VFKReaderDB
 
 class VFKReaderPG : public VFKReaderDB
 {
+protected:
+    PGconn     *m_poDB;
+    PGresult   *m_res;
+    const char *m_pszConnStr;
 
+public:
+    VFKReaderPG(const char *);
+    virtual ~VFKReaderPG();
 };
 
 #endif // GDAL_OGR_VFK_VFKREADERP_H_INCLUDED

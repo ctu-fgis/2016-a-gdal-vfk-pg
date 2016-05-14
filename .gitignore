@@ -31,3 +31,6 @@
 .idea
 *.autosave
 *~
+*.config
+*.files
+*.includes
