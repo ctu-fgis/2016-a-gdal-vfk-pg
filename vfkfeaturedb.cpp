@@ -112,6 +112,7 @@ void VFKFeatureDB::FinalizeSQL()
 */
 OGRErr VFKFeatureDB::ExecuteSQL(const char *pszSQLCommand)
 {
+  /* TODO: to be solved
     int rc;
 
     sqlite3  *poDB;
@@ -145,6 +146,7 @@ OGRErr VFKFeatureDB::ExecuteSQL(const char *pszSQLCommand)
     }
 
     return OGRERR_NONE;
+  */
 }
 
 /*!
