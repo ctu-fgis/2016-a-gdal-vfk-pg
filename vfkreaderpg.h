@@ -18,7 +18,10 @@ public:
     VFKReaderPG(const char *);
     virtual ~VFKReaderPG();
 
-    OGRErr        ExecuteSQL(const char *, bool = FALSE); // TODO
+    void          PrepareStatement(const char *);
+    OGRErr        ExecuteSQL(const char *, bool = FALSE);
+    OGRErr        ExecuteSQL(const char *, int&);
+    OGRErr        ExecuteSQL(std::vector<int>&);
 };
 
 #endif // GDAL_OGR_VFK_VFKREADERPG_H_INCLUDED

@@ -34,6 +34,7 @@
 
 #include "vfkreader.h"
 #include "vfkreaderp.h"
+#include "vfkreadersqlite.h"
 
 #include "cpl_conv.h"
 #include "cpl_error.h"
@@ -61,17 +62,13 @@ IVFKReader::~IVFKReader()
 */
 IVFKReader *CreateVFKReader(const char *pszFilename)
 {
-    // PB: OGR_VFK_DB_NAME - zmenit na OGR_VFK_DB ???
-
     const char *pszDbNameConf = CPLGetConfigOption("OGR_VFK_DB_NAME", NULL);
-    return new VFKReaderPG(pszFilename);
-    /*
-    if(pszDbNameConf && STARTS_WITH(pszDbNameConf, "PG:")){
-        return new VFKReaderPG(pszFilename);
-    }else{
-        return new VFKReaderSQLite(pszFilename);
+    if (pszDbNameConf && STARTS_WITH(pszDbNameConf, "PG:")){
+        // return new VFKReaderPG(pszFilename);
+        return NULL;
     }
-    */
+     
+    return new VFKReaderSQLite(pszFilename);
 }
 
 /*!

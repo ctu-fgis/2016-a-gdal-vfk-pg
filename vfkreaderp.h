@@ -126,7 +126,7 @@ public:
 
     virtual void    PrepareStatement(const char *) = 0;
     virtual OGRErr  ExecuteSQL(const char *, bool = FALSE) = 0;
-    virtual OGRErr  ExecuteSQLCount(const char *, int&) = 0;
+    virtual OGRErr  ExecuteSQL(const char *, int&) = 0;
     virtual OGRErr  ExecuteSQL(std::vector<int>&) = 0;
 };
 

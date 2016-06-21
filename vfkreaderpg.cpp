@@ -33,7 +33,7 @@
 #include "cpl_vsi.h"
 
 #include "vfkreader.h"
-#include "vfkreaderp.h"
+#include "vfkreaderpg.h"
 
 #include "cpl_conv.h"
 #include "cpl_error.h"
@@ -80,4 +80,20 @@ VFKReaderPG::VFKReaderPG(const char *pszFileName) : VFKReaderDB(pszFileName)
 VFKReaderPG::~VFKReaderPG()
 {
     PQfinish(m_poDB);
+}
+
+void VFKReaderPG::PrepareStatement(const char *pszSQLCommand)
+{
+}
+
+OGRErr VFKReaderPG::ExecuteSQL(const char *pszSQLCommand, bool bQuiet)
+{
+}
+
+OGRErr VFKReaderPG::ExecuteSQL(const char *pszSQLCommand, int& count)
+{
+}
+
+OGRErr VFKReaderPG::ExecuteSQL(std::vector<int>& record)
+{
 }

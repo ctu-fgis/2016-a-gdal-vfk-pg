@@ -51,7 +51,6 @@ int VFKDataBlockDB::LoadGeometryPoint()
     double x, y;
 
     CPLString     osSQL;
-    sqlite3_stmt *hStmt;
 
     VFKFeatureDB *poFeature;
     VFKReaderDB  *poReader;
@@ -65,15 +64,15 @@ int VFKDataBlockDB::LoadGeometryPoint()
     bSkipInvalid = EQUAL(m_pszName, "OB") || EQUAL(m_pszName, "OP") || EQUAL(m_pszName, "OBBP");
     osSQL.Printf("SELECT SOURADNICE_Y,SOURADNICE_X,%s,rowid FROM %s",
                  FID_COLUMN, m_pszName);
-    hStmt = poReader->PrepareStatement(osSQL.c_str());
 
     if (poReader->IsSpatial())
 	poReader->ExecuteSQL("BEGIN");
 
-    while(poReader->ExecuteSQL(hStmt) == OGRERR_NONE) {
+    poReader->PrepareStatement(osSQL.c_str());
+    while(poReader->ExecuteSQL(record) == OGRERR_NONE && record.size() > 0) {
         /* read values */
-        x = -1.0 * sqlite3_column_double(hStmt, 0); /* S-JTSK coordinate system expected */
-        y = -1.0 * sqlite3_column_double(hStmt, 1);
+        x = -1.0 * record[0]; /* S-JTSK coordinate system expected */
+        y = -1.0 * record[1];
 #ifdef DEBUG
 	const GIntBig iFID = sqlite3_column_int64(hStmt, 2);
 #endif

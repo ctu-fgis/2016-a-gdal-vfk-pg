@@ -229,32 +229,6 @@ VFKReaderSQLite::~VFKReaderSQLite()
 }
 
 /*!
-  \brief Prepare SQL statement
-
-  \param pszSQLCommand SQL statement to be prepared
-
-  \return pointer to sqlite3_stmt instance or NULL on error
-*/
-void VFKReaderSQLite::PrepareStatement(const char *pszSQLCommand)
-{
-    int rc;
-    CPLDebug("OGR-VFK", "VFKReaderDB::PrepareStatement(): %s", pszSQLCommand);
-
-    rc = sqlite3_prepare(m_poDB, pszSQLCommand, -1,
-                         &m_hStmt, NULL);
-
-    if (rc != SQLITE_OK) {
-        CPLError(CE_Failure, CPLE_AppDefined,
-                 "In PrepareStatement(): sqlite3_prepare(%s):\n  %s",
-                 pszSQLCommand, sqlite3_errmsg(m_poDB));
-
-        if(m_hStmt != NULL) {
-            sqlite3_finalize(m_hStmt);
-        }
-    }
-}
-
-/*!
   \brief Execute prepared SQL statement
 
   \param hStmt pointer to sqlite3_stmt
@@ -284,6 +258,32 @@ OGRErr VFKReaderSQLite::ExecuteSQL(sqlite3_stmt *hStmt)
 
     return OGRERR_NONE;
 
+}
+
+/*!
+  \brief Prepare SQL statement
+
+  \param pszSQLCommand SQL statement to be prepared
+
+  \return pointer to sqlite3_stmt instance or NULL on error
+*/
+void VFKReaderSQLite::PrepareStatement(const char *pszSQLCommand)
+{
+    int rc;
+    CPLDebug("OGR-VFK", "VFKReaderDB::PrepareStatement(): %s", pszSQLCommand);
+
+    rc = sqlite3_prepare(m_poDB, pszSQLCommand, -1,
+                         &m_hStmt, NULL);
+
+    if (rc != SQLITE_OK) {
+        CPLError(CE_Failure, CPLE_AppDefined,
+                 "In PrepareStatement(): sqlite3_prepare(%s):\n  %s",
+                 pszSQLCommand, sqlite3_errmsg(m_poDB));
+
+        if(m_hStmt != NULL) {
+            sqlite3_finalize(m_hStmt);
+        }
+    }
 }
 
 /*!
