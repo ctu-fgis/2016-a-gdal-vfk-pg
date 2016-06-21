@@ -33,7 +33,7 @@
 #include "cpl_vsi.h"
 
 #include "vfkreader.h"
-#include "vfkreaderp.h"
+#include "vfkreadersqlite.h"
 
 #include "cpl_conv.h"
 #include "cpl_error.h"
@@ -226,4 +226,121 @@ VFKReaderSQLite::~VFKReaderSQLite()
                  m_pszDBname);
         VSIUnlink(m_pszDBname);
     }
+}
+
+/*!
+  \brief Prepare SQL statement
+
+  \param pszSQLCommand SQL statement to be prepared
+
+  \return pointer to sqlite3_stmt instance or NULL on error
+*/
+void VFKReaderSQLite::PrepareStatement(const char *pszSQLCommand)
+{
+    int rc;
+    CPLDebug("OGR-VFK", "VFKReaderDB::PrepareStatement(): %s", pszSQLCommand);
+
+    rc = sqlite3_prepare(m_poDB, pszSQLCommand, -1,
+                         &m_hStmt, NULL);
+
+    if (rc != SQLITE_OK) {
+        CPLError(CE_Failure, CPLE_AppDefined,
+                 "In PrepareStatement(): sqlite3_prepare(%s):\n  %s",
+                 pszSQLCommand, sqlite3_errmsg(m_poDB));
+
+        if(m_hStmt != NULL) {
+            sqlite3_finalize(m_hStmt);
+        }
+    }
+}
+
+/*!
+  \brief Execute prepared SQL statement
+
+  \param hStmt pointer to sqlite3_stmt
+
+  \return OGRERR_NONE on success
+*/
+OGRErr VFKReaderSQLite::ExecuteSQL(sqlite3_stmt *hStmt)
+{
+    int rc;
+
+    // assert
+
+    rc = sqlite3_step(m_hStmt);
+    if (rc != SQLITE_ROW) {
+        if (rc == SQLITE_DONE) {
+            sqlite3_finalize(hStmt);
+            return OGRERR_NOT_ENOUGH_DATA;
+        }
+
+        CPLError(CE_Failure, CPLE_AppDefined,
+                 "In ExecuteSQL(): sqlite3_step:\n  %s",
+                 sqlite3_errmsg(m_poDB));
+        if (hStmt)
+            sqlite3_finalize(hStmt);
+        return OGRERR_FAILURE;
+    }
+
+    return OGRERR_NONE;
+
+}
+
+/*!
+  \brief Execute SQL statement (SQLITE only)
+
+  \param pszSQLCommand SQL command to execute
+  \param bQuiet TRUE to print debug message on failure instead of error message
+
+  \return OGRERR_NONE on success or OGRERR_FAILURE on failure
+*/
+
+OGRErr VFKReaderSQLite::ExecuteSQL(const char *pszSQLCommand, bool bQuiet)
+{
+    char *pszErrMsg = NULL;
+
+    if (SQLITE_OK != sqlite3_exec(m_poDB, pszSQLCommand, NULL, NULL, &pszErrMsg)) {
+        if (!bQuiet)
+            CPLError(CE_Failure, CPLE_AppDefined,
+                     "In ExecuteSQL(%s): %s",
+                     pszSQLCommand, pszErrMsg);
+        else
+            CPLError(CE_Warning, CPLE_AppDefined,
+                     "In ExecuteSQL(%s): %s",
+                     pszSQLCommand, pszErrMsg);
+
+        return  OGRERR_FAILURE;
+    }
+
+    return OGRERR_NONE;
+}
+
+OGRErr VFKReaderSQLite::ExecuteSQL(const char *pszSQLCommand, int& count)
+{
+    OGRErr ret;
+    
+    PrepareStatement(pszSQLCommand);
+    ret = ExecuteSQL(m_hStmt);
+    if (ret == OGRERR_NONE) {
+        count = sqlite3_column_int(m_hStmt, 0);
+    }
+
+    sqlite3_finalize(m_hStmt);
+    m_hStmt = NULL;
+
+    return ret;
+}
+
+OGRErr VFKReaderSQLite::ExecuteSQL(std::vector<int>& record)
+{
+    OGRErr ret;
+    
+    ret = ExecuteSQL(m_hStmt);
+    if (ret == OGRERR_NONE) {
+        // for
+        record.push_back(sqlite3_column_int(m_hStmt, 0));
+        // ret.push_back(sqlite3_column_int(m_hStmt, 1));
+    }
+
+    return ret;
 }

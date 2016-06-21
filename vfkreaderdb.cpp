@@ -123,8 +123,6 @@ int VFKReaderDB::ReadDataRecords(IVFKDataBlock *poDataBlock)
 
     IVFKDataBlock *poDataBlockCurrent;
 
-    sqlite3_stmt *hStmt;
-
     pszName = NULL;
     nDataRecords = 0;
     bReadVfk = !m_bDbSource;
@@ -138,38 +136,48 @@ int VFKReaderDB::ReadDataRecords(IVFKDataBlock *poDataBlock)
         osSQL.Printf("SELECT num_records FROM %s WHERE "
                      "table_name = '%s'",
                      VFK_DB_TABLE, pszName);
-        hStmt = PrepareStatement(osSQL.c_str());
+        //hStmt = PrepareStatement(osSQL.c_str());
+        nDataRecords = ExecuteSQL(osSQL.c_str());
+         if (nDataRecords > 0)
+             bReadDb = TRUE; /* -> read from DB */
+         else
+             nDataRecords = 0;
+
+        /* TODO: 
+        }
+        catch ... {
+            
+        }
+        
         if (ExecuteSQL(hStmt) == OGRERR_NONE) {
             nDataRecords = sqlite3_column_int(hStmt, 0);
             if (nDataRecords > 0)
-                bReadDb = TRUE; /* -> read from DB */
+                bReadDb = TRUE; -> read from DB 
             else
                 nDataRecords = 0;
         }
-        sqlite3_finalize(hStmt);
+        */
+
     }
     else {                     /* read all data blocks */
         /* check for existing records (re-use already inserted data) */
+        int count;
+
         osSQL.Printf("SELECT COUNT(*) FROM %s WHERE num_records > 0", VFK_DB_TABLE);
-        hStmt = PrepareStatement(osSQL.c_str());
-        if (ExecuteSQL(hStmt) == OGRERR_NONE &&
-            sqlite3_column_int(hStmt, 0) != 0)
+        if (ExecuteSQL(osSQL.c_str(), count) == OGRERR_NONE && count != 0) {
             bReadDb = TRUE;     /* -> read from DB */
-        sqlite3_finalize(hStmt);
+        }
 
         /* check if file is already registered in DB (requires file_size column) */
         osSQL.Printf("SELECT COUNT(*) FROM %s WHERE file_name = '%s' AND "
                      "file_size = " CPL_FRMT_GUIB " AND num_records > 0",
                      VFK_DB_TABLE, CPLGetFilename(m_pszFilename),
                      (GUIntBig) m_poFStat->st_size);
-        hStmt = PrepareStatement(osSQL.c_str());
-        if (ExecuteSQL(hStmt) == OGRERR_NONE &&
-            sqlite3_column_int(hStmt, 0) > 0) {
+        if (ExecuteSQL(osSQL.c_str(), count) == OGRERR_NONE && count > 0) {
             /* -> file already registered (filename & size is the same) */
             CPLDebug("OGR-VFK", "VFK file %s already loaded in DB", m_pszFilename);
             bReadVfk = FALSE;
         }
-        sqlite3_finalize(hStmt);
     }
     
     if (bReadDb) {        /* read records from DB */
@@ -196,11 +204,12 @@ int VFKReaderDB::ReadDataRecords(IVFKDataBlock *poDataBlock)
               osSQL += "WHERE PORADOVE_CISLO_BODU = 1 ";
             osSQL += "ORDER BY ";
             osSQL += FID_COLUMN;
-            hStmt = PrepareStatement(osSQL.c_str());
             nDataRecords = 0;
-            while (ExecuteSQL(hStmt) == OGRERR_NONE) {
-                iFID = sqlite3_column_int(hStmt, 0);
-                iRowId = sqlite3_column_int(hStmt, 1);
+            std::vector<int> record;
+            PrepareStatement(osSQL.c_str());
+            while (ExecuteSQL(record) == OGRERR_NONE) {
+                iFID = record[0];
+                iRowId = record[1];
                 poNewFeature = new VFKFeatureDB(poDataBlockCurrent, iRowId, iFID);
                 poDataBlockCurrent->AddFeature(poNewFeature);
                 nDataRecords++;
@@ -209,17 +218,14 @@ int VFKReaderDB::ReadDataRecords(IVFKDataBlock *poDataBlock)
             /* check DB consistency */
             osSQL.Printf("SELECT num_features FROM %s WHERE table_name = '%s'",
                          VFK_DB_TABLE, pszName);
-            hStmt = PrepareStatement(osSQL.c_str());
-            if (ExecuteSQL(hStmt) == OGRERR_NONE) {
+            {
                 int nFeatDB;
-
-                nFeatDB = sqlite3_column_int(hStmt, 0);
-                if (nFeatDB > 0 && nFeatDB != poDataBlockCurrent->GetFeatureCount())
+                if (ExecuteSQL(osSQL.c_str(), nFeatDB) == OGRERR_NONE &&
+                    nFeatDB > 0 && nFeatDB != poDataBlockCurrent->GetFeatureCount())
                     CPLError(CE_Failure, CPLE_AppDefined,
                              "%s: Invalid number of features " CPL_FRMT_GIB " (should be %d)",
                              pszName, poDataBlockCurrent->GetFeatureCount(), nFeatDB);
             }
-            sqlite3_finalize(hStmt);
         }
     }
 
@@ -326,13 +332,12 @@ IVFKDataBlock *VFKReaderDB::CreateDataBlock(const char *pszBlockName)
 */
 void VFKReaderDB::AddDataBlock(IVFKDataBlock *poDataBlock, const char *pszDefn)
 {
+    int count;
     const char *pszBlockName;
     const char *pszKey;
     CPLString   osCommand, osColumn;
 
     VFKPropertyDefn *poPropertyDefn;
-
-    sqlite3_stmt *hStmt;
 
     pszBlockName = poDataBlock->GetName();
 
@@ -340,10 +345,7 @@ void VFKReaderDB::AddDataBlock(IVFKDataBlock *poDataBlock, const char *pszDefn)
     osCommand.Printf("SELECT COUNT(*) FROM %s WHERE "
                      "table_name = '%s'",
                      VFK_DB_TABLE, pszBlockName);
-    hStmt = PrepareStatement(osCommand.c_str());
-
-    if (ExecuteSQL(hStmt) == OGRERR_NONE &&
-        sqlite3_column_int(hStmt, 0) == 0) {
+    if (ExecuteSQL(osCommand.c_str(), count) == OGRERR_NONE && count == 0) {
 
         osCommand.Printf("CREATE TABLE IF NOT EXISTS '%s' (", pszBlockName);
         for (int i = 0; i < poDataBlock->GetPropertyCount(); i++) {
@@ -403,109 +405,11 @@ void VFKReaderDB::AddDataBlock(IVFKDataBlock *poDataBlock, const char *pszDefn)
                          pszBlockName, pszDefn);
 
         ExecuteSQL(osCommand.c_str());
-
-        sqlite3_finalize(hStmt);
     }
 
     return VFKReader::AddDataBlock(poDataBlock, NULL);
 }
 
-/*!
-  \brief Prepare SQL statement
-
-  \param pszSQLCommand SQL statement to be prepared
-
-  \return pointer to sqlite3_stmt instance or NULL on error
-*/
-#if 0
-sqlite3_stmt *VFKReaderDB::PrepareStatement(const char *pszSQLCommand)
-{
-    int rc;
-    sqlite3_stmt *hStmt = NULL;
-
-    CPLDebug("OGR-VFK", "VFKReaderDB::PrepareStatement(): %s", pszSQLCommand);
-
-    rc = sqlite3_prepare(m_poDB, pszSQLCommand, -1,
-                         &hStmt, NULL);
-
-    if (rc != SQLITE_OK) {
-        CPLError(CE_Failure, CPLE_AppDefined,
-                 "In PrepareStatement(): sqlite3_prepare(%s):\n  %s",
-                 pszSQLCommand, sqlite3_errmsg(m_poDB));
-
-        if(hStmt != NULL) {
-            sqlite3_finalize(hStmt);
-        }
-
-        return NULL;
-    }
-
-    return hStmt;
-}
-#endif
-
-/*!
-  \brief Execute prepared SQL statement
-
-  \param hStmt pointer to sqlite3_stmt
-
-  \return OGRERR_NONE on success
-*/
-#if 0
-OGRErr VFKReaderDB::ExecuteSQL(sqlite3_stmt *hStmt)
-{
-    int rc;
-
-    // assert
-
-    rc = sqlite3_step(hStmt);
-    if (rc != SQLITE_ROW) {
-        if (rc == SQLITE_DONE) {
-            sqlite3_finalize(hStmt);
-            return OGRERR_NOT_ENOUGH_DATA;
-        }
-
-        CPLError(CE_Failure, CPLE_AppDefined,
-                 "In ExecuteSQL(): sqlite3_step:\n  %s",
-                 sqlite3_errmsg(m_poDB));
-        if (hStmt)
-            sqlite3_finalize(hStmt);
-        return OGRERR_FAILURE;
-    }
-
-    return OGRERR_NONE;
-
-}
-#endif
-/*!
-  \brief Execute SQL statement (SQLITE only)
-
-  \param pszSQLCommand SQL command to execute
-  \param bQuiet TRUE to print debug message on failure instead of error message
-
-  \return OGRERR_NONE on success or OGRERR_FAILURE on failure
-*/
-#if 0
-OGRErr VFKReaderDB::ExecuteSQL(const char *pszSQLCommand, bool bQuiet)
-{
-    char *pszErrMsg = NULL;
-
-    if (SQLITE_OK != sqlite3_exec(m_poDB, pszSQLCommand, NULL, NULL, &pszErrMsg)) {
-        if (!bQuiet)
-            CPLError(CE_Failure, CPLE_AppDefined,
-                     "In ExecuteSQL(%s): %s",
-                     pszSQLCommand, pszErrMsg);
-        else
-            CPLError(CE_Warning, CPLE_AppDefined,
-                     "In ExecuteSQL(%s): %s",
-                     pszSQLCommand, pszErrMsg);
-
-        return  OGRERR_FAILURE;
-    }
-
-    return OGRERR_NONE;
-}
-#endif
 /*!
   \brief Add feature
 

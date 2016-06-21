@@ -34,11 +34,10 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "vfkreader.h"
 #include "ogr_api.h"
-
-#include "sqlite3.h"
 
 class VFKReader;
 
@@ -125,39 +124,10 @@ public:
     int           ReadDataBlocks();
     int           ReadDataRecords(IVFKDataBlock * = NULL);
 
-    sqlite3_stmt *PrepareStatement(const char *);   //PB: datovy typ sqlite3_stmt?
-    OGRErr        ExecuteSQL(const char *, bool = FALSE);
-    OGRErr        ExecuteSQL(sqlite3_stmt *);
-};
-
-/************************************************************************/
-/*                              VFKReaderSQLite                         */
-/************************************************************************/
-
-class VFKReaderSQLite : public VFKReaderDB
-{
-protected:
-    sqlite3 *m_poDB;
-
-public:
-    VFKReaderSQLite(const char *);
-    virtual ~VFKReaderSQLite();
-};
-
-/************************************************************************/
-/*                              VFKReaderPG                             */
-/************************************************************************/
-
-class VFKReaderPG : public VFKReaderDB
-{
-protected:
-    PGconn     *m_poDB;
-    PGresult   *m_res;
-    const char *m_pszConnStr;
-
-public:
-    VFKReaderPG(const char *);
-    virtual ~VFKReaderPG();
+    virtual void    PrepareStatement(const char *) = 0;
+    virtual OGRErr  ExecuteSQL(const char *, bool = FALSE) = 0;
+    virtual OGRErr  ExecuteSQLCount(const char *, int&) = 0;
+    virtual OGRErr  ExecuteSQL(std::vector<int>&) = 0;
 };
 
 #endif // GDAL_OGR_VFK_VFKREADERP_H_INCLUDED
