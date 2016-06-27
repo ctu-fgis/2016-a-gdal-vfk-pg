@@ -74,35 +74,37 @@ VFKReaderDB::~VFKReaderDB()
   \return number of data blocks or -1 on error
 */
 
-#if 0
 int VFKReaderDB::ReadDataBlocks()
 {
     int  nDataBlocks = -1;
     CPLString osSQL;
-    const char *pszName, *pszDefn;
+    CPLString osName, osDefn;
     IVFKDataBlock *poNewDataBlock;
 
-    sqlite3_stmt *hStmt;
-
     osSQL.Printf("SELECT table_name, table_defn FROM %s", VFK_DB_TABLE);
-    hStmt = PrepareStatement(osSQL.c_str());
-    while(ExecuteSQL(hStmt) == OGRERR_NONE) {
-        pszName = (const char*) sqlite3_column_text(hStmt, 0);
-        pszDefn = (const char*) sqlite3_column_text(hStmt, 1);
-        poNewDataBlock = (IVFKDataBlock *) CreateDataBlock(pszName);
+
+    std::vector<VFKDbValue> record;
+    record.push_back(VFKDbValue(DT_TEXT));
+    record.push_back(VFKDbValue(DT_TEXT));
+    PrepareStatement(osSQL.c_str());
+    while(ExecuteSQL(record) == OGRERR_NONE) {
+        osName = static_cast<CPLString> (record[0]);
+        osDefn = static_cast<CPLString> (record[1]);
+        poNewDataBlock = (IVFKDataBlock *) CreateDataBlock(osName.c_str());
         poNewDataBlock->SetGeometryType();
-        poNewDataBlock->SetProperties(pszDefn);
+        poNewDataBlock->SetProperties(osDefn.c_str());
         VFKReader::AddDataBlock(poNewDataBlock, NULL);
     }
 
-    CPL_IGNORE_RET_VAL(sqlite3_exec(m_poDB, "BEGIN", NULL, NULL, NULL));
+    ExecuteSQL("BEGIN");
+    //CPL_IGNORE_RET_VAL(sqlite3_exec(m_poDB, "BEGIN", NULL, NULL, NULL));
     /* Read data from VFK file */
     nDataBlocks = VFKReader::ReadDataBlocks();
-    CPL_IGNORE_RET_VAL(sqlite3_exec(m_poDB, "COMMIT", NULL, NULL, NULL));
+    //CPL_IGNORE_RET_VAL(sqlite3_exec(m_poDB, "COMMIT", NULL, NULL, NULL));
+    ExecuteSQL("COMMIT");
 
     return nDataBlocks;
 }
-#endif
 
 /*!
   \brief Load data records (&D)
