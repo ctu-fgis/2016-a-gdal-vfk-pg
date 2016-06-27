@@ -82,18 +82,22 @@ VFKReaderPG::~VFKReaderPG()
     PQfinish(m_poDB);
 }
 
-void VFKReaderPG::PrepareStatement(const char *pszSQLCommand)
+void VFKReaderPG::PrepareStatement(const char *pszSQLCommand, int idx)
 {
+  // Petr
 }
 
 OGRErr VFKReaderPG::ExecuteSQL(const char *pszSQLCommand, bool bQuiet)
 {
+  // Petr
 }
 
 OGRErr VFKReaderPG::ExecuteSQL(const char *pszSQLCommand, int& count)
 {
+  // Petr
 }
 
-OGRErr VFKReaderPG::ExecuteSQL(std::vector<int>& record)
+OGRErr VFKReaderPG::ExecuteSQL(std::vector<VFKDbValue>& record, int idx)
 {
+  // Petr
 }

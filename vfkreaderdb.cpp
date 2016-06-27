@@ -182,7 +182,7 @@ int VFKReaderDB::ReadDataRecords(IVFKDataBlock *poDataBlock)
     
     if (bReadDb) {        /* read records from DB */
         /* read from  DB */
-        long iFID;
+        GIntBig iFID;
         int  iRowId;
         VFKFeatureDB *poNewFeature = NULL;
 
@@ -205,11 +205,13 @@ int VFKReaderDB::ReadDataRecords(IVFKDataBlock *poDataBlock)
             osSQL += "ORDER BY ";
             osSQL += FID_COLUMN;
             nDataRecords = 0;
-            std::vector<int> record;
+            std::vector<VFKDbValue> record;
+            record.push_back(VFKDbValue(DT_BIGINT));
+            record.push_back(VFKDbValue(DT_INT));
             PrepareStatement(osSQL.c_str());
             while (ExecuteSQL(record) == OGRERR_NONE) {
-                iFID = record[0];
-                iRowId = record[1];
+                iFID = (int) record[0]; // TODO: static_cast
+                iRowId = (int) record[1];
                 poNewFeature = new VFKFeatureDB(poDataBlockCurrent, iRowId, iFID);
                 poDataBlockCurrent->AddFeature(poNewFeature);
                 nDataRecords++;

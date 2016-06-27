@@ -41,6 +41,33 @@
 
 class VFKReader;
 
+enum VFKSQLTYPE { DT_INT, DT_BIGINT, DT_DOUBLE, DT_TEXT };
+
+class VFKDbValue
+{
+private:
+    int m_iVal;
+    GIntBig m_iValB;
+    double m_dVal;
+    CPLString m_sVal;
+
+    VFKSQLTYPE m_type;
+
+public:
+    VFKDbValue(VFKSQLTYPE type): m_type (type) {};
+    
+    VFKSQLTYPE get_type() const { return m_type; }
+    void set_int(int val) { m_iVal = val; } // TODO: zjednodusit
+    void set_bigint(GIntBig val) { m_iValB = val; }
+    void set_double(double val) { m_dVal = val; }
+    void set_text(char *val) { m_sVal.assign(val, strlen(val)); }
+
+    operator int() { return m_iVal; }
+    operator GIntBig() { return m_iValB; }
+    operator double() { return m_dVal; }
+    operator CPLString() { return m_sVal; }
+};
+
 /************************************************************************/
 /*                              VFKReader                               */
 /************************************************************************/
@@ -124,10 +151,10 @@ public:
     int           ReadDataBlocks();
     int           ReadDataRecords(IVFKDataBlock * = NULL);
 
-    virtual void    PrepareStatement(const char *) = 0;
+    virtual void    PrepareStatement(const char *, int = 0) = 0;
     virtual OGRErr  ExecuteSQL(const char *, bool = FALSE) = 0;
     virtual OGRErr  ExecuteSQL(const char *, int&) = 0;
-    virtual OGRErr  ExecuteSQL(std::vector<int>&) = 0;
+    virtual OGRErr  ExecuteSQL(std::vector<VFKDbValue>&, int = 0) = 0;
 };
 
 #endif // GDAL_OGR_VFK_VFKREADERP_H_INCLUDED

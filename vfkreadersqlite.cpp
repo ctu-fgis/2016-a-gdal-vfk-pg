@@ -241,7 +241,7 @@ OGRErr VFKReaderSQLite::ExecuteSQL(sqlite3_stmt *hStmt)
 
     // assert
 
-    rc = sqlite3_step(m_hStmt);
+    rc = sqlite3_step(hStmt);
     if (rc != SQLITE_ROW) {
         if (rc == SQLITE_DONE) {
             sqlite3_finalize(hStmt);
@@ -267,21 +267,30 @@ OGRErr VFKReaderSQLite::ExecuteSQL(sqlite3_stmt *hStmt)
 
   \return pointer to sqlite3_stmt instance or NULL on error
 */
-void VFKReaderSQLite::PrepareStatement(const char *pszSQLCommand)
+void VFKReaderSQLite::PrepareStatement(const char *pszSQLCommand, int idx)
 {
     int rc;
     CPLDebug("OGR-VFK", "VFKReaderDB::PrepareStatement(): %s", pszSQLCommand);
 
-    rc = sqlite3_prepare(m_poDB, pszSQLCommand, -1,
-                         &m_hStmt, NULL);
-
+    if (idx < m_hStmt.size()) {
+        sqlite3_stmt *hStmt;
+        rc = sqlite3_prepare(m_poDB, pszSQLCommand, -1,
+                             &hStmt, NULL);
+        m_hStmt.push_back(hStmt);
+    }
+    else {
+        rc = sqlite3_prepare(m_poDB, pszSQLCommand, -1,
+                             &(m_hStmt[idx]), NULL);
+    }
+    
     if (rc != SQLITE_OK) {
         CPLError(CE_Failure, CPLE_AppDefined,
                  "In PrepareStatement(): sqlite3_prepare(%s):\n  %s",
                  pszSQLCommand, sqlite3_errmsg(m_poDB));
 
-        if(m_hStmt != NULL) {
-            sqlite3_finalize(m_hStmt);
+        if(m_hStmt[idx] != NULL) {
+            sqlite3_finalize(m_hStmt[idx]);
+            m_hStmt.erase(m_hStmt.begin() + idx);
         }
     }
 }
@@ -320,26 +329,48 @@ OGRErr VFKReaderSQLite::ExecuteSQL(const char *pszSQLCommand, int& count)
     OGRErr ret;
     
     PrepareStatement(pszSQLCommand);
-    ret = ExecuteSQL(m_hStmt);
+    ret = ExecuteSQL(m_hStmt[0]); // TODO: solve
     if (ret == OGRERR_NONE) {
-        count = sqlite3_column_int(m_hStmt, 0);
+        count = sqlite3_column_int(m_hStmt[0], 0); // TODO:
     }
 
-    sqlite3_finalize(m_hStmt);
-    m_hStmt = NULL;
+    sqlite3_finalize(m_hStmt[0]); // TODO
+    m_hStmt[0] = NULL; // TODO
 
     return ret;
 }
 
-OGRErr VFKReaderSQLite::ExecuteSQL(std::vector<int>& record)
+OGRErr VFKReaderSQLite::ExecuteSQL(std::vector<VFKDbValue>& record, int idx)
 {
     OGRErr ret;
     
-    ret = ExecuteSQL(m_hStmt);
+    ret = ExecuteSQL(m_hStmt[idx]);
+    // TODO: num_of_column == size
     if (ret == OGRERR_NONE) {
-        // for
-        record.push_back(sqlite3_column_int(m_hStmt, 0));
-        // ret.push_back(sqlite3_column_int(m_hStmt, 1));
+        for (int i = 0; i < record.size(); i++) { // TODO: iterator
+            VFKDbValue *value = &(record[i]);
+            switch (value->get_type()) {
+            case DT_INT:
+                value->set_int(sqlite3_column_int(m_hStmt[idx], i));
+                break;
+            case DT_BIGINT:
+                value->set_bigint(sqlite3_column_int64(m_hStmt[idx], i));
+                break;
+            case DT_DOUBLE:
+                value->set_double(sqlite3_column_double(m_hStmt[idx], i));
+                break;
+            case DT_TEXT:
+                value->set_text((char *)sqlite3_column_text(m_hStmt[idx], i));
+                break;
+            }
+        }
+    }
+    else {
+        sqlite3_finalize(m_hStmt[idx]);
+        m_hStmt[idx] = NULL;
+        if (idx > 0) {
+            m_hStmt.erase(m_hStmt.begin() + idx);
+        }
     }
 
     return ret;
