@@ -12,7 +12,9 @@ vfkreader.cpp
 vfkreader.h
 vfkreaderdb.cpp
 vfkreaderp.h
+vfkreaderpg.h
 vfkreaderpg.cpp
+vfkreadersqlite.h
 vfkreadersqlite.cpp
 GNUmakefile
 makefile.vc

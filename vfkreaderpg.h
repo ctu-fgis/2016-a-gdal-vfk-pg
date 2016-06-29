@@ -2,6 +2,7 @@
 #define GDAL_OGR_VFK_VFKREADERPG_H_INCLUDED
 
 #include "vfkreaderp.h"
+#include "libpq-fe.h"
 
 /************************************************************************/
 /*                              VFKReaderPG                             */
@@ -9,6 +10,10 @@
 
 class VFKReaderPG : public VFKReaderDB
 {
+private:
+    OGRErr        ExecuteSQL(PGresult *);
+    std::vector<PGresult *> m_hStmt;
+
 protected:
     PGconn     *m_poDB;
     PGresult   *m_res;

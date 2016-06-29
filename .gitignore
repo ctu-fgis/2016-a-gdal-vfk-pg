@@ -34,3 +34,7 @@
 *.config
 *.files
 *.includes
+
+# QT Creator files
+VFK.creator.user
+VFK.files
